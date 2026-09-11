@@ -1,89 +1,116 @@
-* {
-  box-sizing: border-box;
-}
+"use client";
 
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #f5f5f5;
-  color: #222;
-}
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
 
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 40px 20px;
-}
+export default function Home() {
+  const [cursos, setCursos] = useState([]);
+  const [cursoSelecionado, setCursoSelecionado] = useState(null);
+  const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(true);
 
-.container > h1 {
-  margin-bottom: 30px;
-}
+  useEffect(() => {
+    carregarCursos();
+  }, []);
 
-.cursos {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
-}
+  async function carregarCursos() {
+    const { data, error } = await supabase
+      .from("cursos")
+      .select("*");
 
-.curso,
-.detalhes {
-  background: white;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-}
+    if (error) {
+      console.error(error);
+      setErro(error.message);
+      setCarregando(false);
+      return;
+    }
 
-.curso h2 {
-  margin-top: 0;
-}
+    setCursos(data || []);
+    setCarregando(false);
+  }
 
-.curso p {
-  line-height: 1.5;
-}
+  if (carregando) {
+    return (
+      <main className="container">
+        <h1>Carregando cursos...</h1>
+      </main>
+    );
+  }
 
-.botao,
-.voltar {
-  border: none;
-  border-radius: 8px;
-  padding: 12px 18px;
-  cursor: pointer;
-  font-size: 15px;
-}
+  if (cursoSelecionado) {
+    return (
+      <main className="container">
+        <button
+          className="voltar"
+          onClick={() => setCursoSelecionado(null)}
+        >
+          ← Voltar
+        </button>
 
-.botao {
-  background: #111;
-  color: white;
-  margin-top: 10px;
-}
+        <div className="detalhes">
+          <h1>{cursoSelecionado.titulo}</h1>
 
-.botao:hover {
-  background: #333;
-}
+          <h3>Descrição</h3>
 
-.voltar {
-  background: #ddd;
-  margin-bottom: 20px;
-}
+          <p>
+            {cursoSelecionado.descricao ||
+              "Sem descrição cadastrada."}
+          </p>
 
-.detalhes {
-  max-width: 800px;
-}
+          {cursoSelecionado.data_hora_inicio && (
+            <>
+              <h3>Data e horário</h3>
 
-.detalhes h1 {
-  margin-top: 0;
-}
+              <p>
+                {new Date(
+                  cursoSelecionado.data_hora_inicio
+                ).toLocaleString("pt-BR")}
+              </p>
+            </>
+          )}
 
-.detalhes h3 {
-  margin-top: 25px;
-}
+          <p>
+            <strong>ID:</strong> {cursoSelecionado.id}
+          </p>
+        </div>
+      </main>
+    );
+  }
 
-.detalhes p {
-  line-height: 1.6;
-}
+  return (
+    <main className="container">
+      <h1>Cursos disponíveis</h1>
 
-.erro {
-  background: #ffe5e5;
-  padding: 20px;
-  border-radius: 10px;
-  margin-bottom: 20px;
+      {erro && (
+        <div className="erro">
+          <strong>Erro:</strong>
+          <p>{erro}</p>
+        </div>
+      )}
+
+      {cursos.length === 0 && !erro && (
+        <p>Nenhum curso cadastrado.</p>
+      )}
+
+      <div className="cursos">
+        {cursos.map((curso) => (
+          <div className="curso" key={curso.id}>
+            <h2>{curso.titulo}</h2>
+
+            <p>
+              {curso.descricao ||
+                "Sem descrição cadastrada."}
+            </p>
+
+            <button
+              className="botao"
+              onClick={() => setCursoSelecionado(curso)}
+            >
+              Ver informações
+            </button>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
 }
